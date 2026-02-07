@@ -4,7 +4,8 @@
 # Ubuntu 22.04 Lite Install #
 #############################
 
-ROOTFS_DIR=/home/container
+ROOTFS_DIR=/home/container/ubuntu-rootfs
+VAR_DIR=/home/container/var
 ARCH=$(uname -m)
 PROOT_VERSION="5.3.0"
 UBUNTU_URL="https://cloud-images.ubuntu.com/wsl/releases/22.04/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz"
@@ -17,13 +18,12 @@ fi
 
 # Create necessary directories
 mkdir -p $ROOTFS_DIR/usr/local/bin
-mkdir -p $ROOTFS_DIR/var/lib/dpkg
-mkdir -p $ROOTFS_DIR/var/lib/apt
+mkdir -p $ROOTFS_DIR/home
+mkdir -p $ROOTFS_DIR/root
 mkdir -p $ROOTFS_DIR/tmp
 mkdir -p $ROOTFS_DIR/run
-mkdir -p $ROOTFS_DIR/etc/apt
-mkdir -p $ROOTFS_DIR/root
-mkdir -p $ROOTFS_DIR/home
+mkdir -p $ROOTFS_DIR/etc
+mkdir -p $VAR_DIR  # This will be Ubuntu's /var
 
 # Download and extract Ubuntu rootfs if not installed
 if [ ! -e $ROOTFS_DIR/.installed ]; then
@@ -66,7 +66,7 @@ clear && cat << EOF
 Welcome to Ubuntu 22.04 Lite rootfs!
 EOF
 
-# Enter PRoot environment with proper writable mounts
+# Enter PRoot environment
 $ROOTFS_DIR/usr/local/bin/proot \
     --rootfs="$ROOTFS_DIR" \
     --link2symlink \
@@ -76,9 +76,9 @@ $ROOTFS_DIR/usr/local/bin/proot \
     --bind=/proc \
     --bind=/dev \
     --bind=/sys \
-    --bind=$ROOTFS_DIR/var:/var \
-    --bind=$ROOTFS_DIR/run:/run \
+    --bind=$VAR_DIR:/var \
     --bind=$ROOTFS_DIR/tmp:/tmp \
+    --bind=$ROOTFS_DIR/run:/run \
     --bind=$ROOTFS_DIR/etc:/etc \
     --bind=$ROOTFS_DIR/root:/root \
     --bind=$ROOTFS_DIR/home:/home \
