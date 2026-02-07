@@ -1,40 +1,85 @@
 #!/bin/sh
 
 #############################
-# Alpine Linux Installation #
+# Debian/Ubuntu Lite Install #
 #############################
 
-# Define the root directory to /home/container.
-# We can only write in /home/container and /tmp in the container.
 ROOTFS_DIR=/home/container
-
-# Define the Alpine Linux version we are going to be using.
-ALPINE_VERSION="3.18"
-ALPINE_FULL_VERSION="3.18.3"
-APK_TOOLS_VERSION="2.14.0-r2" # Make sure to update this too when updating Alpine Linux.
-PROOT_VERSION="5.3.0" # Some releases do not have static builds attached.
-
-# Detect the machine architecture.
+DISTRO="debian"             # can also use "ubuntu"
+RELEASE="bookworm"          # Debian slim release
 ARCH=$(uname -m)
+PROOT_VERSION="5.3.0"
 
-# Check machine architecture to make sure it is supported.
-# If not, we exit with a non-zero status code.
+# Map architecture
 if [ "$ARCH" = "x86_64" ]; then
-  ARCH_ALT=amd64
+    ARCH_ALT=amd64
 elif [ "$ARCH" = "aarch64" ]; then
-  ARCH_ALT=arm64
+    ARCH_ALT=arm64
 else
-  printf "Unsupported CPU architecture: ${ARCH}"
-  exit 1
+    echo "Unsupported CPU architecture: ${ARCH}"
+    exit 1
 fi
 
-# Download & decompress the Alpine linux root file system if not already installed.
+# Download minimal rootfs tarball
 if [ ! -e $ROOTFS_DIR/.installed ]; then
-    # Download Alpine Linux root file system.
-    curl -Lo /tmp/rootfs.tar.gz \
-    "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/releases/${ARCH}/alpine-minirootfs-${ALPINE_FULL_VERSION}-${ARCH}.tar.gz"
-    # Extract the Alpine Linux root file system.
+    mkdir -p $ROOTFS_DIR
+
+    if [ "$DISTRO" = "debian" ]; then
+        ROOTFS_URL="https://deb.debian.org/debian/dists/${RELEASE}/main/installer-${ARCH_ALT}/current/images/netboot/netboot.tar.gz"
+    else
+        ROOTFS_URL="https://cloud-images.ubuntu.com/minimal/releases/22.04/release/ubuntu-22.04-minimal-cloudimg-${ARCH_ALT}-root.tar.gz"
+    fi
+
+    echo "Downloading minimal ${DISTRO} rootfs..."
+    curl -L $ROOTFS_URL -o /tmp/rootfs.tar.gz
+    echo "Extracting..."
     tar -xzf /tmp/rootfs.tar.gz -C $ROOTFS_DIR
+fi
+
+# Download PRoot and GoTTY
+if [ ! -e $ROOTFS_DIR/usr/local/bin/proot ]; then
+    echo "Downloading PRoot..."
+    curl -Lo $ROOTFS_DIR/usr/local/bin/proot \
+         "https://github.com/proot-me/proot/releases/download/v${PROOT_VERSION}/proot-v${PROOT_VERSION}-${ARCH}-static"
+    chmod 755 $ROOTFS_DIR/usr/local/bin/proot
+
+    echo "Downloading GoTTY..."
+    curl -Lo /tmp/gotty.tar.gz \
+         "https://github.com/sorenisanerd/gotty/releases/download/v1.5.0/gotty_v1.5.0_linux_${ARCH_ALT}.tar.gz"
+    tar -xzf /tmp/gotty.tar.gz -C $ROOTFS_DIR/usr/local/bin
+    chmod 755 $ROOTFS_DIR/usr/local/bin/gotty
+fi
+
+# Setup DNS resolver
+if [ ! -e $ROOTFS_DIR/.installed ]; then
+    printf "nameserver 1.1.1.1\nnameserver 1.0.0.1" > $ROOTFS_DIR/etc/resolv.conf
+    touch $ROOTFS_DIR/.installed
+    rm -rf /tmp/rootfs.tar.gz /tmp/gotty.tar.gz
+fi
+
+# Welcome banner
+clear && cat << EOF
+ ██████╗ ███████╗ ██████╗ ██████╗ 
+██╔═══██╗██╔════╝██╔═══██╗██╔══██╗
+██║   ██║█████╗  ██║   ██║██████╔╝
+██║   ██║██╔══╝  ██║   ██║██╔═══╝ 
+╚██████╔╝███████╗╚██████╔╝██║     
+ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝     
+Welcome to ${DISTRO} Lite rootfs!
+EOF
+
+# Enter PRoot environment
+$ROOTFS_DIR/usr/local/bin/proot \
+    --rootfs="${ROOTFS_DIR}" \
+    --link2symlink \
+    --kill-on-exit \
+    --root-id \
+    --cwd=/root \
+    --bind=/proc \
+    --bind=/dev \
+    --bind=/sys \
+    --bind=/tmp \
+    /bin/bash    tar -xzf /tmp/rootfs.tar.gz -C $ROOTFS_DIR
 fi
 
 ################################
