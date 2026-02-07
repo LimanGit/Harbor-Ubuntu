@@ -2,7 +2,7 @@ import os
 import urllib.request
 
 def main():
-    url = "https://raw.githubusercontent.com/RealTriassic/Harbor/main/harbor.sh"
+    url = "https://raw.githubusercontent.com/LimanGit/Harbor-Ubuntu/main/harbor.sh"
     destination = "harbor.sh"
 
     try:
