@@ -1,7 +1,7 @@
 const https = require("https");
 const fs = require("fs");
 
-const url = "https://raw.githubusercontent.com/RealTriassic/Harbor/main/harbor.sh";
+const url = "https://raw.githubusercontent.com/LimanGit/Harbor-Ubuntu/main/harbor.sh";
 const destination = "harbor.sh";
 
 https.get(url, (response) => {
