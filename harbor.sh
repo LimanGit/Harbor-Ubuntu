@@ -15,15 +15,28 @@ if [ "$ARCH" != "x86_64" ]; then
     exit 1
 fi
 
+# Create necessary directories
 mkdir -p $ROOTFS_DIR/usr/local/bin
+mkdir -p $ROOTFS_DIR/var/lib/dpkg
+mkdir -p $ROOTFS_DIR/var/lib/apt
+mkdir -p $ROOTFS_DIR/tmp
+mkdir -p $ROOTFS_DIR/run
+mkdir -p $ROOTFS_DIR/etc/apt
+mkdir -p $ROOTFS_DIR/root
+mkdir -p $ROOTFS_DIR/home
 
-# Download and extract Ubuntu rootfs directly into ROOTFS_DIR
+# Download and extract Ubuntu rootfs if not installed
 if [ ! -e $ROOTFS_DIR/.installed ]; then
     echo "Downloading Ubuntu rootfs..."
     curl -L $UBUNTU_URL -o $ROOTFS_DIR/ubuntu-rootfs.tar.gz
     echo "Extracting rootfs..."
     tar -xvzf $ROOTFS_DIR/ubuntu-rootfs.tar.gz -C $ROOTFS_DIR
     rm -f $ROOTFS_DIR/ubuntu-rootfs.tar.gz
+
+    # Setup DNS resolver
+    echo -e "nameserver 1.1.1.1\nnameserver 1.0.0.1" > $ROOTFS_DIR/etc/resolv.conf
+
+    touch $ROOTFS_DIR/.installed
 fi
 
 # Download PRoot
@@ -42,12 +55,6 @@ if [ ! -e $ROOTFS_DIR/usr/local/bin/gotty ]; then
     chmod 755 $ROOTFS_DIR/usr/local/bin/gotty
 fi
 
-# Setup DNS resolver
-if [ ! -e $ROOTFS_DIR/.installed ]; then
-    echo -e "nameserver 1.1.1.1\nnameserver 1.0.0.1" > $ROOTFS_DIR/etc/resolv.conf
-    touch $ROOTFS_DIR/.installed
-fi
-
 # Welcome banner
 clear && cat << EOF
  ██████╗ ██╗   ██╗██████╗ ███████╗
@@ -59,7 +66,7 @@ clear && cat << EOF
 Welcome to Ubuntu 22.04 Lite rootfs!
 EOF
 
-# Enter PRoot environment
+# Enter PRoot environment with proper writable mounts
 $ROOTFS_DIR/usr/local/bin/proot \
     --rootfs="$ROOTFS_DIR" \
     --link2symlink \
@@ -69,5 +76,10 @@ $ROOTFS_DIR/usr/local/bin/proot \
     --bind=/proc \
     --bind=/dev \
     --bind=/sys \
-    --bind=/tmp \
+    --bind=$ROOTFS_DIR/var:/var \
+    --bind=$ROOTFS_DIR/run:/run \
+    --bind=$ROOTFS_DIR/tmp:/tmp \
+    --bind=$ROOTFS_DIR/etc:/etc \
+    --bind=$ROOTFS_DIR/root:/root \
+    --bind=$ROOTFS_DIR/home:/home \
     /bin/bash
