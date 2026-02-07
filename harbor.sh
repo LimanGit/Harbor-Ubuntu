@@ -5,7 +5,7 @@
 #############################
 
 ROOTFS_DIR=/home/container
-VAR_DIR=$ROOTFS_DIR/var
+VAR_DIR=$ROOTFS_DIR/var_writable   # <-- separate writable /var folder
 ARCH=$(uname -m)
 PROOT_VERSION="5.3.0"
 UBUNTU_URL="https://cloud-images.ubuntu.com/wsl/releases/22.04/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz"
@@ -66,7 +66,7 @@ clear && cat << EOF
 Welcome to Ubuntu 22.04 Lite rootfs!
 EOF
 
-# Enter PRoot environment with proper /var
+# Enter PRoot environment with isolated /var
 $ROOTFS_DIR/usr/local/bin/proot \
     --rootfs="$ROOTFS_DIR" \
     --link2symlink \
@@ -76,7 +76,7 @@ $ROOTFS_DIR/usr/local/bin/proot \
     --bind=/proc \
     --bind=/dev \
     --bind=/sys \
-    --bind=$VAR_DIR:/var \
+    --bind=$VAR_DIR:/var \           # <-- isolated writable /var
     --bind=$ROOTFS_DIR/tmp:/tmp \
     --bind=$ROOTFS_DIR/run:/run \
     --bind=$ROOTFS_DIR/etc:/etc \
