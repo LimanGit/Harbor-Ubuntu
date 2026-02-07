@@ -9,7 +9,7 @@ ARCH=$(uname -m)
 PROOT_VERSION="5.3.0"
 UBUNTU_URL="https://github.com/EXALAB/Anlinux-Resources/raw/refs/heads/master/Rootfs/Ubuntu/amd64/ubuntu-rootfs-amd64.tar.xz"
 
-# Map architecture
+# Only support x86_64
 if [ "$ARCH" != "x86_64" ]; then
     echo "Unsupported CPU architecture: ${ARCH}"
     exit 1
@@ -20,8 +20,9 @@ if [ ! -e $ROOTFS_DIR/.installed ]; then
     mkdir -p $ROOTFS_DIR
     echo "Downloading Ubuntu rootfs..."
     curl -L $UBUNTU_URL -o /tmp/ubuntu-rootfs.tar.xz
-    echo "Extracting..."
-    tar -xJf /tmp/ubuntu-rootfs.tar.xz -C $ROOTFS_DIR
+    echo "Extracting rootfs..."
+    # --strip-components=1 ensures the contents go directly into ROOTFS_DIR
+    tar -xJf /tmp/ubuntu-rootfs.tar.xz -C $ROOTFS_DIR --strip-components=1
 fi
 
 # Download PRoot
