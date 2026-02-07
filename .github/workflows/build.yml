@@ -1,40 +1,37 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
+name: Build Kotlin Wrapper JAR
 
-name: Build and Package
-on: [pull_request, push, workflow_dispatch]
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - wrappers/Kotlin/**
+      - .github/workflows/build.yml
+  pull_request:
+    branches: [main, master]
+    paths:
+      - wrappers/Kotlin/**
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: gradle/wrapper-validation-action@v1
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: 8
-      - uses: actions/cache@v3
+          java-version: 17
+          distribution: temurin
+          cache: gradle
+
+      - working-directory: wrappers/Kotlin
+        run: chmod +x gradlew
+
+      - working-directory: wrappers/Kotlin
+        run: ./gradlew clean shadowJar --no-daemon
+
+      - uses: actions/upload-artifact@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Compile Kotlin Wrapper
-        run: |
-          cd wrappers/Kotlin
-          chmod +x gradlew
-          ./gradlew shadowJar
-          mv build/libs/harbor-1.0.0-all.jar .
-      - uses: actions/upload-artifact@v3
-        with:
-          name: Artifacts
-          path: |
-            wrappers/Javascript/harbor.js
-            wrappers/Python/harbor.py
-            wrappers/Kotlin/harbor-1.0.0-all.jar
-            harbor.sh
+          name: kotlin-wrapper-jar
+          path: wrappers/Kotlin/build/libs/*.jar
